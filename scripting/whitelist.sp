@@ -858,15 +858,15 @@ public int Whitelist_SteamID_Index(const char[] sSteamID)
 
 public void Whitelist_Delete(const char[] sSteamID)
 {
-	// Delete
 	int index = Whitelist_SteamID_Index(sSteamID);
 
 	if (index != -1)
 	{
 		g_hWhitelist.Erase(index);
 		g_hWhitelist_Map.Remove(sSteamID);
+	
+		// In case player is on server we also check for that.
+		Whitelist_Check();
 	}
 
-	// In case player is on server we also check for that.
-	Whitelist_Check();
 }
