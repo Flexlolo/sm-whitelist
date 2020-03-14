@@ -99,7 +99,6 @@ public void OnMapStart()
 	}
 }
 
-
 // This is earliest function that is called when client connects
 // Here we get client steamid provided on connection
 public Action Event_PlayerConnect(Handle event, const char[] name, bool dontBroadcast)
@@ -203,6 +202,7 @@ public Action Command_Whitelist(int client, int args)
 
 		if (strlen(sArgs))
 		{
+
 			if (lolo_String_Startswith(sArgs, "on ", true) || StrEqual(sArgs, "on", true))
 			{
 				Whitelist_Toggle(true);
@@ -242,23 +242,6 @@ public Action Command_Whitelist(int client, int args)
 					PrintToServer("%s Reloaded.", CONSOLE_WHITELIST);
 				}
 			}
-			else if (lolo_String_Startswith(sArgs, "add ", true))
-			{
-				Command_Whitelist_Change(client, sArgs);
-			}
-			else if (lolo_String_Startswith(sArgs, "pause ", true) || StrEqual(sArgs, "pause", true))
-			{
-				Whitelist_Pause_Toggle(true);
-
-				if (client)
-				{
-					CPrintToChat(client, "%s %sPaused.", CHAT_WHITELIST, CHAT_SUCCESS);
-				}
-				else
-				{
-					PrintToServer("%s Paused.", CONSOLE_WHITELIST);
-				}
-			}
 			else if (lolo_String_Startswith(sArgs, "unpause ", true) || StrEqual(sArgs, "unpause", true))
 			{
 				Whitelist_Pause_Toggle(false);
@@ -285,28 +268,71 @@ public Action Command_Whitelist(int client, int args)
 					PrintToServer("%s All players were checked.", CONSOLE_WHITELIST);
 				}
 			}
+			else if (lolo_String_Startswith(sArgs, "add ", true))
+			{
+				Whitelist_Change(client, sArgs);
+			}
+			else if (lolo_String_Startswith(sArgs, "remove ", true))
+			{
+				Whitelist_Change(client, sArgs);
+			}
+			else if (lolo_String_Startswith(sArgs, "pause ", true) || StrEqual(sArgs, "pause", true))
+			{
+				Whitelist_Pause_Toggle(true);
+
+				if (client)
+				{
+					CPrintToChat(client, "%s %sPaused.", CHAT_WHITELIST, CHAT_SUCCESS);
+				}
+				else
+				{
+					PrintToServer("%s Paused.", CONSOLE_WHITELIST);
+				}
+			}
+			else if (lolo_String_Startswith(sArgs, "list", true))
+			{
+				Whitelist_List(client);
+			}
+			else if (lolo_String_Startswith(sArgs, "help", true))
+			{
+				Whitelist_Help(client);
+			}
 		}
 	}
 	else
 	{
-		char[] usage = "usage:\n" ...
-							"sm_whitelist <on/off>  - Toggle whitelist\n" ...
-							"sm_whitelist reload  - Reload whitelist\n" ...
-							"sm_whitelist <pause/unpause>  - Toggle pause\n" ...
-							"sm_whitelist check  - Initiate whitelist check\n" ...
-							"sm_whitelist add <target> <name>  - Whitelist player\n" ...
-							"sm_whitelist remove <target>  - Unwhitelist player\n";
-
-		CPrintToChat(client, "%s %sCheck console for usage.", CHAT_WHITELIST, CHAT_SUCCESS);
-		PrintToConsole(client, usage);
+		Whitelist_Help(client);
 	}
 	
 
 	return Plugin_Handled;
 }
 
-//whitelist <add/remove> <target> <name (on add)>
-stock void Command_Whitelist_Change(int client, const char[] sArgs)
+// whitelist help
+stock void Whitelist_Help(int client)
+{
+	char[] usage = "usage:\n" ...
+					"    sm_whitelist <on/off>  - Toggle whitelist\n" ...
+					"    sm_whitelist reload  - Reload whitelist\n" ...
+					"    sm_whitelist <pause/unpause>  - Toggle pause\n" ...
+					"    sm_whitelist check  - Initiate whitelist check\n" ...
+					"    sm_whitelist add <target> (<name>)  - Whitelist player\n" ...
+					"    sm_whitelist remove <target>  - Unwhitelist player\n" ...
+					"    sm_whitelist list - Generate list\n";
+
+	if (client)
+	{
+		CPrintToChat(client, "%s %sCheck console for usage.", CHAT_WHITELIST, CHAT_SUCCESS);
+		PrintToConsole(client, usage);
+	}
+	else
+	{
+		PrintToServer(usage);
+	}
+}
+
+// whitelist <add/remove> <target> <name (on add)>
+stock void Whitelist_Change(int client, const char[] sArgs)
 {
 	if (StrContains(sArgs, " ", false) != -1)
 	{
@@ -372,7 +398,7 @@ stock void Command_Whitelist_Change(int client, const char[] sArgs)
 						{
 							if (Whitelist_Access_SteamID(sArg[1]))
 							{
-								Whitelist_Delete(sArg[1]);
+								Whitelist_Remove(sArg[1]);
 
 								if (client)
 								{
@@ -448,7 +474,7 @@ stock void Command_Whitelist_Change(int client, const char[] sArgs)
 							{
 								if (Whitelist_Access_SteamID(sArg[1][1]))
 								{
-									Whitelist_Delete(sArg[1][1]);
+									Whitelist_Remove(sArg[1][1]);
 
 									if (client)
 									{
@@ -526,6 +552,51 @@ stock void Command_Whitelist_Change(int client, const char[] sArgs)
 	}
 }
 
+// whitelist list
+stock void Whitelist_List(int client)
+{
+	if (!g_hWhitelist.Length)
+	{
+		if (client)
+		{
+			CPrintToChat(client, "%s %Whitelist is empty.", CHAT_WHITELIST, CHAT_ERROR);
+		}
+		else
+		{
+			PrintToServer("%s Whitelist is empty.", CONSOLE_WHITELIST);
+		}
+
+	}
+	else
+	{
+		if (client)
+		{
+			CPrintToChat(client, "%s %sCheck console for output.", CHAT_WHITELIST, CHAT_SUCCESS);
+			PrintToConsole(client, "Whitelist:");
+		}
+		else
+		{
+			PrintToServer("Whitelist:");
+		}
+
+		char line[WHITELIST_STEAM_ID_LENGTH];
+
+		for (int i; i < g_hWhitelist.Length; i++)
+		{
+			g_hWhitelist.GetString(i, line, sizeof(line));
+
+			if (client)
+			{
+				PrintToConsole(client, line);
+			}
+			else
+			{
+				PrintToServer(line);
+			}
+		}
+	}
+}
+
 // Sub-commands implementation
 public void Whitelist_Toggle(bool toggle)
 {
@@ -597,10 +668,78 @@ public void Whitelist_Add(int client, const char[] sSteamID, const char[] sName)
 	}
 }
 
-// TODO 
-public void Whitelist_Delete(const char[] sSteamID)
+public void Whitelist_Remove(const char[] sSteamID)
 {
+	if (FileExists(g_sWhitelist_Path))
+	{
+		char sWhitelist_Path_Old[PLATFORM_MAX_PATH];
+		Format(sWhitelist_Path_Old, sizeof(sWhitelist_Path_Old), "%s.old", g_sWhitelist_Path);
 
+		RenameFile(sWhitelist_Path_Old, g_sWhitelist_Path);
+
+		File hFileOld = OpenFile(sWhitelist_Path_Old, "r+");
+		File hFile = OpenFile(g_sWhitelist_Path, "w+");
+
+		if (hFileOld == null || hFile == null) return;
+
+		char line[128];
+		char sSteamID2[WHITELIST_STEAM_ID_LENGTH];
+
+		int size;
+			
+		while (!hFileOld.EndOfFile() && hFileOld.ReadLine(line, sizeof(line)))
+		{
+			bool modified = false;
+
+			if (!lolo_String_Startswith(line, "//", false))
+			{
+				size = strlen(line);
+
+				if (size)
+				{
+					int newline = StrContains(line, "\n", false);
+
+					if (newline != -1) size = newline + 1;
+					else size += 1;
+				}
+
+				if (size)
+				{
+					if (size > sizeof(sSteamID2))
+					{
+						size = sizeof(sSteamID2);
+					}
+
+					strcopy(sSteamID2, size, line);
+				}
+
+				if (StrEqual(sSteamID, sSteamID2))
+				{
+					char write[WHITELIST_STEAM_ID_LENGTH + 3];
+					Format(write, sizeof(write), "// %s", sSteamID2);
+					hFile.WriteLine(write);
+					modified = true;
+				}
+			}
+
+			if (!modified)
+			{
+				if (line[strlen(line)-1] == '\n')
+				{
+					strcopy(line, strlen(line), line);
+				}
+
+				hFile.WriteLine(line);
+			}
+		}
+
+		lolo_CloseHandle(hFile);
+		lolo_CloseHandle(hFileOld);
+
+		DeleteFile(sWhitelist_Path_Old);
+	}
+
+	Whitelist_Delete(sSteamID);
 }
 
 public void Whitelist_Pause_Toggle(bool toggle)
@@ -647,62 +786,43 @@ public void Whitelist_Parse()
 	{
 		File hFile = OpenFile(g_sWhitelist_Path, "r");
 
-		if (hFile != null)
+		if (hFile == null) return;
+
+		char line[128];
+		char sSteamID[WHITELIST_STEAM_ID_LENGTH];
+
+		int size;
+		Regex r = new Regex("^STEAM_");
+
+		while (!hFile.EndOfFile() && hFile.ReadLine(line, sizeof(line)))
 		{
-			char line[128];
-			char sSteamID[WHITELIST_STEAM_ID_LENGTH];
+			if (lolo_String_Startswith(line, "//", false)) continue;
+			if (r.Match(line) < 1) continue;
 
-			int semicolon;
-			int newline;
+			size = strlen(line);
 
-			int size;
-
-			while (!hFile.EndOfFile() && hFile.ReadLine(line, sizeof(line)))
+			if (size)
 			{
-				if (!lolo_String_Startswith(line, "//", false))
-				{
-					size = strlen(line);
+				int newline = StrContains(line, "\n", false);
 
-					if (size)
-					{
-						semicolon = StrContains(line, ";", false);
-						newline = StrContains(line, "\n", false);
-
-						if (semicolon != -1 || newline != -1)
-						{
-							if (semicolon != -1)
-							{
-								size = semicolon + 1;
-							}
-							else
-							{
-								size = newline + 1;
-							}
-						}
-						else
-						{
-							size += 1;
-						}
-					}
-
-					if (size)
-					{
-						if (size > sizeof(sSteamID))
-						{
-							size = sizeof(sSteamID);
-						}
-
-						strcopy(sSteamID, size, line);
-
-						//PrintToServer(line);
-						//PrintToServer("inserting '%s' (semicolon %d | newline %d)", sSteamID, semicolon, newline);
-						Whitelist_Insert(sSteamID);
-					}
-				}
+				if (newline != -1) size = newline + 1;
+				else size += 1;
 			}
 
-			lolo_CloseHandle(hFile);
+			if (size)
+			{
+				if (size > sizeof(sSteamID))
+				{
+					size = sizeof(sSteamID);
+				}
+
+				strcopy(sSteamID, size, line);
+
+				Whitelist_Insert(sSteamID);
+			}		
 		}
+
+		lolo_CloseHandle(hFile);
 	}
 }
 
@@ -714,4 +834,39 @@ public void Whitelist_Insert(const char[] sSteamID)
 	g_hWhitelist.SetString(size, sSteamID);
 
 	g_hWhitelist_Map.SetValue(sSteamID, 1, true);
+}
+
+public int Whitelist_SteamID_Index(const char[] sSteamID)
+{
+	if (Whitelist_Access_SteamID(sSteamID))
+	{
+		char compare[WHITELIST_STEAM_ID_LENGTH];
+
+		for (int i; i < g_hWhitelist.Length; i++)
+		{
+			g_hWhitelist.GetString(i, compare, sizeof(compare));
+
+			if (StrEqual(sSteamID, compare))
+			{
+				return i;
+			}
+		}	
+	}
+
+	return -1;
+}
+
+public void Whitelist_Delete(const char[] sSteamID)
+{
+	// Delete
+	int index = Whitelist_SteamID_Index(sSteamID);
+
+	if (index != -1)
+	{
+		g_hWhitelist.Erase(index);
+		g_hWhitelist_Map.Remove(sSteamID);
+	}
+
+	// In case player is on server we also check for that.
+	Whitelist_Check();
 }
