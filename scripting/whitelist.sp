@@ -10,8 +10,9 @@ INCLUDES
 */
 
 #include <sourcemod>
+#include <regex>
 #include <sdkhooks>
-#include <morecolors>
+#include <printqueue>
 #include <lololib>
 
 /*
@@ -218,7 +219,7 @@ public Action Command_Whitelist(int client, int args)
 
 				if (client)
 				{
-					CPrintToChat(client, "%s %sEnabled.", CHAT_WHITELIST, CHAT_SUCCESS);
+					QPrintToChat(client, "%s %sEnabled.", CHAT_WHITELIST, CHAT_SUCCESS);
 				}
 				else
 				{
@@ -231,7 +232,7 @@ public Action Command_Whitelist(int client, int args)
 
 				if (client)
 				{
-					CPrintToChat(client, "%s %sDisabled.", CHAT_WHITELIST, CHAT_SUCCESS);
+					QPrintToChat(client, "%s %sDisabled.", CHAT_WHITELIST, CHAT_SUCCESS);
 				}
 				else
 				{
@@ -244,7 +245,7 @@ public Action Command_Whitelist(int client, int args)
 				
 				if (client)
 				{
-					CPrintToChat(client, "%s %sReloaded.", CHAT_WHITELIST, CHAT_SUCCESS);
+					QPrintToChat(client, "%s %sReloaded.", CHAT_WHITELIST, CHAT_SUCCESS);
 				}
 				else
 				{
@@ -257,7 +258,7 @@ public Action Command_Whitelist(int client, int args)
 
 				if (client)
 				{
-					CPrintToChat(client, "%s %sPaused.", CHAT_WHITELIST, CHAT_SUCCESS);
+					QPrintToChat(client, "%s %sPaused.", CHAT_WHITELIST, CHAT_SUCCESS);
 				}
 				else
 				{
@@ -270,7 +271,7 @@ public Action Command_Whitelist(int client, int args)
 
 				if (client)
 				{
-					CPrintToChat(client, "%s %sUnpaused.", CHAT_WHITELIST, CHAT_SUCCESS);
+					QPrintToChat(client, "%s %sUnpaused.", CHAT_WHITELIST, CHAT_SUCCESS);
 				}
 				else
 				{
@@ -283,7 +284,7 @@ public Action Command_Whitelist(int client, int args)
 
 				if (client)
 				{
-					CPrintToChat(client, "%s %sAll players were checked.", CHAT_WHITELIST, CHAT_SUCCESS);
+					QPrintToChat(client, "%s %sAll players were checked.", CHAT_WHITELIST, CHAT_SUCCESS);
 				}
 				else
 				{
@@ -334,8 +335,8 @@ stock void Command_Whitelist_Help(int client)
 
 	if (client)
 	{
-		CPrintToChat(client, "%s %sCheck console for usage.", CHAT_WHITELIST, CHAT_SUCCESS);
-		PrintToConsole(client, usage);
+		QPrintToChat(client, "%s %sCheck console for usage.", CHAT_WHITELIST, CHAT_SUCCESS);
+		QPrintToConsole(client, usage);
 	}
 	else
 	{
@@ -350,7 +351,7 @@ stock void Command_Whitelist_Add(int client, const char[][] sArgs, int args_coun
 	{
 		if (client)
 		{
-			CPrintToChat(client, "%s %sInvalid command format.", CHAT_WHITELIST, CHAT_ERROR);
+			QPrintToChat(client, "%s %sInvalid command format.", CHAT_WHITELIST, CHAT_ERROR);
 		}
 		else
 		{
@@ -373,7 +374,7 @@ stock void Command_Whitelist_Add(int client, const char[][] sArgs, int args_coun
 		{
 			if (client)
 			{
-				CPrintToChat(client, "%s %sPlayer already whitelisted.", CHAT_WHITELIST, CHAT_ERROR);
+				QPrintToChat(client, "%s %sPlayer already whitelisted.", CHAT_WHITELIST, CHAT_ERROR);
 			}
 			else
 			{
@@ -391,7 +392,7 @@ stock void Command_Whitelist_Add(int client, const char[][] sArgs, int args_coun
 
 			if (client)
 			{
-				CPrintToChat(client, "%s %sPlayer added to whitelist. (%s%s %s| %s%s%s)", CHAT_WHITELIST, CHAT_SUCCESS, 
+				QPrintToChat(client, "%s %sPlayer added to whitelist. (%s%s %s| %s%s%s)", CHAT_WHITELIST, CHAT_SUCCESS, 
 																						CHAT_VALUE, sSteamID, CHAT_SUCCESS, 
 																						CHAT_VALUE, sName, CHAT_SUCCESS);
 			}
@@ -409,7 +410,7 @@ stock void Command_Whitelist_Add(int client, const char[][] sArgs, int args_coun
 			{
 				if (client)
 				{
-					CPrintToChat(client, "%s %sPlayer already whitelisted.", CHAT_WHITELIST, CHAT_ERROR);
+					QPrintToChat(client, "%s %sPlayer already whitelisted.", CHAT_WHITELIST, CHAT_ERROR);
 				}
 				else
 				{
@@ -424,7 +425,7 @@ stock void Command_Whitelist_Add(int client, const char[][] sArgs, int args_coun
 
 					if (client)
 					{
-						CPrintToChat(client, "%s %sPlayer added to whitelist. (%s%s %s| %s%s%s)", CHAT_WHITELIST, CHAT_SUCCESS, 
+						QPrintToChat(client, "%s %sPlayer added to whitelist. (%s%s %s| %s%s%s)", CHAT_WHITELIST, CHAT_SUCCESS, 
 																								CHAT_VALUE, sArgs[1][1], CHAT_SUCCESS, 
 																								CHAT_VALUE, sArgs[2], CHAT_SUCCESS);
 					}
@@ -437,7 +438,7 @@ stock void Command_Whitelist_Add(int client, const char[][] sArgs, int args_coun
 				{
 					if (client)
 					{
-						CPrintToChat(client, "%s %sInvalid command format.", CHAT_WHITELIST, CHAT_ERROR);
+						QPrintToChat(client, "%s %sInvalid command format.", CHAT_WHITELIST, CHAT_ERROR);
 					}
 					else
 					{
@@ -450,7 +451,7 @@ stock void Command_Whitelist_Add(int client, const char[][] sArgs, int args_coun
 		{
 			if (client)
 			{
-				CPrintToChat(client, "%s %sInvalid target.", CHAT_WHITELIST, CHAT_ERROR);
+				QPrintToChat(client, "%s %sInvalid target.", CHAT_WHITELIST, CHAT_ERROR);
 			}
 			else
 			{
@@ -462,7 +463,7 @@ stock void Command_Whitelist_Add(int client, const char[][] sArgs, int args_coun
 	{
 		if (client)
 		{
-			CPrintToChat(client, "%s %sMultiple targets.", CHAT_WHITELIST, CHAT_ERROR);
+			QPrintToChat(client, "%s %sMultiple targets.", CHAT_WHITELIST, CHAT_ERROR);
 		}
 		else
 		{
@@ -480,7 +481,7 @@ stock void Command_Whitelist_Remove(int client, const char[][] sArgs, int args_c
 	{
 		if (client)
 		{
-			CPrintToChat(client, "%s %sInvalid command format.", CHAT_WHITELIST, CHAT_ERROR);
+			QPrintToChat(client, "%s %sInvalid command format.", CHAT_WHITELIST, CHAT_ERROR);
 		}
 		else
 		{
@@ -503,7 +504,7 @@ stock void Command_Whitelist_Remove(int client, const char[][] sArgs, int args_c
 		{
 			if (client)
 			{
-				CPrintToChat(client, "%s %sPlayer is not whitelisted.", CHAT_WHITELIST, CHAT_ERROR);
+				QPrintToChat(client, "%s %sPlayer is not whitelisted.", CHAT_WHITELIST, CHAT_ERROR);
 			}
 			else
 			{
@@ -516,7 +517,7 @@ stock void Command_Whitelist_Remove(int client, const char[][] sArgs, int args_c
 
 			if (client)
 			{
-				CPrintToChat(client, "%s %sPlayer removed from whitelist. (%s%s%s)", CHAT_WHITELIST, CHAT_SUCCESS, 
+				QPrintToChat(client, "%s %sPlayer removed from whitelist. (%s%s%s)", CHAT_WHITELIST, CHAT_SUCCESS, 
 																					CHAT_VALUE, sSteamID, CHAT_SUCCESS);
 			}
 			else
@@ -533,7 +534,7 @@ stock void Command_Whitelist_Remove(int client, const char[][] sArgs, int args_c
 			{
 				if (client)
 				{
-					CPrintToChat(client, "%s %sPlayer is not whitelisted.", CHAT_WHITELIST, CHAT_ERROR);
+					QPrintToChat(client, "%s %sPlayer is not whitelisted.", CHAT_WHITELIST, CHAT_ERROR);
 				}
 				else
 				{
@@ -546,7 +547,7 @@ stock void Command_Whitelist_Remove(int client, const char[][] sArgs, int args_c
 
 				if (client)
 				{
-					CPrintToChat(client, "%s %sPlayer removed from whitelist. (%s%s%s)", CHAT_WHITELIST, CHAT_SUCCESS, 
+					QPrintToChat(client, "%s %sPlayer removed from whitelist. (%s%s%s)", CHAT_WHITELIST, CHAT_SUCCESS, 
 																						CHAT_VALUE, sArgs[1][1], CHAT_SUCCESS);
 				}
 				else
@@ -559,7 +560,7 @@ stock void Command_Whitelist_Remove(int client, const char[][] sArgs, int args_c
 		{
 			if (client)
 			{
-				CPrintToChat(client, "%s %sInvalid target.", CHAT_WHITELIST, CHAT_ERROR);
+				QPrintToChat(client, "%s %sInvalid target.", CHAT_WHITELIST, CHAT_ERROR);
 			}
 			else
 			{
@@ -571,7 +572,7 @@ stock void Command_Whitelist_Remove(int client, const char[][] sArgs, int args_c
 	{
 		if (client)
 		{
-			CPrintToChat(client, "%s %sMultiple targets.", CHAT_WHITELIST, CHAT_ERROR);
+			QPrintToChat(client, "%s %sMultiple targets.", CHAT_WHITELIST, CHAT_ERROR);
 		}
 		else
 		{
@@ -589,7 +590,7 @@ stock void Command_Whitelist_List(int client)
 	{
 		if (client)
 		{
-			CPrintToChat(client, "%s %Whitelist is empty.", CHAT_WHITELIST, CHAT_ERROR);
+			QPrintToChat(client, "%s %Whitelist is empty.", CHAT_WHITELIST, CHAT_ERROR);
 		}
 		else
 		{
@@ -601,8 +602,8 @@ stock void Command_Whitelist_List(int client)
 	{
 		if (client)
 		{
-			CPrintToChat(client, "%s %sCheck console for output.", CHAT_WHITELIST, CHAT_SUCCESS);
-			PrintToConsole(client, "Whitelist:");
+			QPrintToChat(client, "%s %sCheck console for output.", CHAT_WHITELIST, CHAT_SUCCESS);
+			QPrintToConsole(client, "Whitelist:");
 		}
 		else
 		{
@@ -617,7 +618,7 @@ stock void Command_Whitelist_List(int client)
 
 			if (client)
 			{
-				PrintToConsole(client, line);
+				QPrintToConsole(client, line);
 			}
 			else
 			{
