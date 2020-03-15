@@ -195,15 +195,24 @@ COMMANDS
 
 public Action Command_Whitelist(int client, int args)
 {
-	if (args)
+	char sArgString[192];
+	GetCmdArgString(sArgString, sizeof(sArgString));
+	
+	ArrayList hArgs = lolo_Args_Split(sArgString);
+	
+	if (hArgs != null)
 	{
-		char sArgs[192];
-		GetCmdArgString(sArgs, sizeof(sArgs));
+		int args_count = hArgs.Length;
+		char[][] sArgs = new char[args_count][192];
 
-		if (strlen(sArgs))
+		for (int i; i < args_count; i++)
 		{
+			hArgs.GetString(i, sArgs[i], 192);
+		}
 
-			if (lolo_String_Startswith(sArgs, "on ", true) || StrEqual(sArgs, "on", true))
+		if (args_count == 1)
+		{
+			if (StrEqual(sArgs[0], "on"))
 			{
 				Whitelist_Toggle(true);
 
@@ -216,7 +225,7 @@ public Action Command_Whitelist(int client, int args)
 					PrintToServer("%s Enabled.", CONSOLE_WHITELIST);
 				}
 			}
-			else if (lolo_String_Startswith(sArgs, "off ", true) || StrEqual(sArgs, "off", true))
+			else if (StrEqual(sArgs[0], "off"))
 			{
 				Whitelist_Toggle(false);
 
@@ -226,13 +235,13 @@ public Action Command_Whitelist(int client, int args)
 				}
 				else
 				{
-					PrintToServer("%s Disabled.", CONSOLE_WHITELIST);
+					PrintToServer("%s Disabled.", CONSOLE_WHITELIST);	
 				}
 			}
-			else if (lolo_String_Startswith(sArgs, "reload ", true) || StrEqual(sArgs, "reload", true))
+			else if (StrEqual(sArgs[0], "reload"))
 			{
 				Whitelist_Reload();
-
+				
 				if (client)
 				{
 					CPrintToChat(client, "%s %sReloaded.", CHAT_WHITELIST, CHAT_SUCCESS);
@@ -242,7 +251,20 @@ public Action Command_Whitelist(int client, int args)
 					PrintToServer("%s Reloaded.", CONSOLE_WHITELIST);
 				}
 			}
-			else if (lolo_String_Startswith(sArgs, "unpause ", true) || StrEqual(sArgs, "unpause", true))
+			else if (StrEqual(sArgs[0], "pause"))
+			{
+				Whitelist_Pause_Toggle(true);
+
+				if (client)
+				{
+					CPrintToChat(client, "%s %sPaused.", CHAT_WHITELIST, CHAT_SUCCESS);
+				}
+				else
+				{
+					PrintToServer("%s Paused.", CONSOLE_WHITELIST);					
+				}
+			}
+			else if (StrEqual(sArgs[0], "unpause"))
 			{
 				Whitelist_Pause_Toggle(false);
 
@@ -252,10 +274,10 @@ public Action Command_Whitelist(int client, int args)
 				}
 				else
 				{
-					PrintToServer("%s Unpaused.", CONSOLE_WHITELIST);
+					PrintToServer("%s Unpaused.", CONSOLE_WHITELIST);	
 				}
 			}
-			else if (lolo_String_Startswith(sArgs, "check ", true) || StrEqual(sArgs, "check", true))
+			else if (StrEqual(sArgs[0], "check"))
 			{
 				Whitelist_Check();
 
@@ -268,48 +290,37 @@ public Action Command_Whitelist(int client, int args)
 					PrintToServer("%s All players were checked.", CONSOLE_WHITELIST);
 				}
 			}
-			else if (lolo_String_Startswith(sArgs, "add ", true))
+			else if (StrEqual(sArgs[0], "list"))
 			{
-				Whitelist_Change(client, sArgs);
+				Command_Whitelist_List(client);
 			}
-			else if (lolo_String_Startswith(sArgs, "remove ", true))
+			else if (StrEqual(sArgs[0], "help"))
 			{
-				Whitelist_Change(client, sArgs);
+				Command_Whitelist_Help(client);
 			}
-			else if (lolo_String_Startswith(sArgs, "pause ", true) || StrEqual(sArgs, "pause", true))
+		}
+		else
+		{
+			if (StrEqual(sArgs[0], "add"))
 			{
-				Whitelist_Pause_Toggle(true);
-
-				if (client)
-				{
-					CPrintToChat(client, "%s %sPaused.", CHAT_WHITELIST, CHAT_SUCCESS);
-				}
-				else
-				{
-					PrintToServer("%s Paused.", CONSOLE_WHITELIST);
-				}
+				Command_Whitelist_Add(client, sArgs, args_count);
 			}
-			else if (lolo_String_Startswith(sArgs, "list", true))
+			else if (StrEqual(sArgs[0], "remove"))
 			{
-				Whitelist_List(client);
-			}
-			else if (lolo_String_Startswith(sArgs, "help", true))
-			{
-				Whitelist_Help(client);
+				Command_Whitelist_Remove(client, sArgs, args_count);
 			}
 		}
 	}
 	else
 	{
-		Whitelist_Help(client);
+		Command_Whitelist_Help(client);
 	}
 	
-
 	return Plugin_Handled;
 }
 
 // whitelist help
-stock void Whitelist_Help(int client)
+stock void Command_Whitelist_Help(int client)
 {
 	char[] usage = "usage:\n" ...
 					"    sm_whitelist <on/off>                  Toggle whitelist\n" ...
@@ -332,229 +343,247 @@ stock void Whitelist_Help(int client)
 	}
 }
 
-// whitelist <add/remove> <target> <name (on add)>
-stock void Whitelist_Change(int client, const char[] sArgs)
+// whitlist add <target> (<name>)
+stock void Command_Whitelist_Add(int client, const char[][] sArgs, int args_count)
 {
-	if (StrContains(sArgs, " ", false) != -1)
+	if (args_count == 1 || args_count > 3)
 	{
-		char sArg[3][64];
-		ExplodeString(sArgs, " ", sArg, sizeof(sArg), sizeof(sArg[]), true);
-
-		if (strlen(sArg[0]))
+		if (client)
 		{
-			bool add;
+			CPrintToChat(client, "%s %sInvalid command format.", CHAT_WHITELIST, CHAT_ERROR);
+		}
+		else
+		{
+			PrintToServer("%s Invalid command format.", CONSOLE_WHITELIST);
+		}
 
-			if (StrEqual(sArg[0], "add", true))
+		return;
+	}
+
+	ArrayList hTargets = lolo_Target_Process(client, sArgs[1]);
+
+	if (hTargets.Length == 1)
+	{
+		int target = hTargets.Get(0);
+
+		char sSteamID[WHITELIST_STEAM_ID_LENGTH];
+		GetClientAuthId(target, AuthId_Steam2, sSteamID, sizeof(sSteamID));
+
+		if (Whitelist_Access_SteamID(sSteamID))
+		{
+			if (client)
 			{
-				add = true;
+				CPrintToChat(client, "%s %sPlayer already whitelisted.", CHAT_WHITELIST, CHAT_ERROR);
 			}
-
-			if (strlen(sArg[1]))
+			else
 			{
-				ArrayList hTargets = lolo_Target_Process(client, sArg[1]);
+				PrintToServer("%s Player already whitelisted.", CONSOLE_WHITELIST);
+			}
+		}
+		else
+		{
+			char sName[32];
 
-				if (hTargets != null)
+			if (args_count == 3) strcopy(sName, sizeof(sName), sArgs[2]);
+			else GetClientName(target, sName, sizeof(sName));
+
+			Whitelist_Add(client, sSteamID, sName);
+
+			if (client)
+			{
+				CPrintToChat(client, "%s %sPlayer added to whitelist. (%s%s %s| %s%s%s)", CHAT_WHITELIST, CHAT_SUCCESS, 
+																						CHAT_VALUE, sSteamID, CHAT_SUCCESS, 
+																						CHAT_VALUE, sName, CHAT_SUCCESS);
+			}
+			else
+			{
+				PrintToServer("%s Player added to whitelist. (%s | %s)", CONSOLE_WHITELIST, sSteamID, sName);
+			}
+		}
+	}
+	else if (hTargets.Length == 0)
+	{
+		if (lolo_String_Startswith(sArgs[1], "#STEAM", true))
+		{
+			if (Whitelist_Access_SteamID(sArgs[1][1]))
+			{
+				if (client)
 				{
-					if (hTargets.Length == 1)
+					CPrintToChat(client, "%s %sPlayer already whitelisted.", CHAT_WHITELIST, CHAT_ERROR);
+				}
+				else
+				{
+					PrintToServer("%s Player already whitelisted.", CONSOLE_WHITELIST);
+				}
+			}
+			else
+			{
+				if (args_count == 3)
+				{
+					Whitelist_Add(client, sArgs[1][1], sArgs[2]);
+
+					if (client)
 					{
-						int target = hTargets.Get(0);
-
-						GetClientAuthId(target, AuthId_Steam2, sArg[1], sizeof(sArg[]));
-
-						if (add)
-						{
-							if (Whitelist_Access_SteamID(sArg[1]))
-							{
-								if (client)
-								{
-									CPrintToChat(client, "%s %sPlayer already whitelisted.", CHAT_WHITELIST, CHAT_ERROR);
-								}
-								else
-								{
-									PrintToServer("%s Player already whitelisted.", CONSOLE_WHITELIST);
-								}
-							}
-							else
-							{
-								if (!strlen(sArg[2]))
-								{
-									GetClientName(target, sArg[2], sizeof(sArg[]));
-								}
-
-								Whitelist_Add(client, sArg[1], sArg[2]);
-
-								if (client)
-								{
-									CPrintToChat(client, "%s %sPlayer added to whitelist. (%s%s %s| %s%s%s)", CHAT_WHITELIST, CHAT_SUCCESS, 
-																											CHAT_VALUE, sArg[1], CHAT_SUCCESS, 
-																											CHAT_VALUE, sArg[2], CHAT_SUCCESS);
-								}
-								else
-								{
-									PrintToServer("%s Player added to whitelist. (%s | %s)", CONSOLE_WHITELIST, sArg[1], sArg[2]);
-								}
-							}
-						}
-						else
-						{
-							if (Whitelist_Access_SteamID(sArg[1]))
-							{
-								Whitelist_Remove(sArg[1]);
-
-								if (client)
-								{
-									CPrintToChat(client, "%s %sPlayer deleted from whitelist. (%s%s%s)", CHAT_WHITELIST, CHAT_SUCCESS, 
-																										CHAT_VALUE, sArg[1], CHAT_SUCCESS);
-								}
-								else
-								{
-									PrintToServer("%s Player deleted from whitelist. (%s)", CONSOLE_WHITELIST, sArg[1]);
-								}
-							}
-							else
-							{
-								if (client)
-								{
-									CPrintToChat(client, "%s %sPlayer is not whitelisted.", CHAT_WHITELIST, CHAT_ERROR);
-								}
-								else
-								{
-									PrintToServer("%s Player is not whitelisted.", CONSOLE_WHITELIST);
-								}
-							}
-						}
-					}
-					else if (hTargets.Length == 0)
-					{
-						if (lolo_String_Startswith(sArg[1], "#STEAM", true))
-						{
-							if (add)
-							{
-								if (Whitelist_Access_SteamID(sArg[1][1]))
-								{
-									if (client)
-									{
-										CPrintToChat(client, "%s %sPlayer already whitelisted.", CHAT_WHITELIST, CHAT_ERROR);
-									}
-									else
-									{
-										PrintToServer("%s Player already whitelisted.", CONSOLE_WHITELIST);
-									}
-								}
-								else
-								{
-									if (strlen(sArg[2]))
-									{
-										Whitelist_Add(client, sArg[1][1], sArg[2]);
-
-										if (client)
-										{
-											CPrintToChat(client, "%s %sPlayer added to whitelist. (%s%s %s| %s%s%s)", CHAT_WHITELIST, CHAT_SUCCESS, 
-																													CHAT_VALUE, sArg[1][1], CHAT_SUCCESS, 
-																													CHAT_VALUE, sArg[2], CHAT_SUCCESS);
-										}
-										else
-										{
-											PrintToServer("%s Player added to whitelist. (%s | %s)", CONSOLE_WHITELIST, sArg[1][1], sArg[2]);
-										}
-									}
-									else
-									{
-										if (client)
-										{
-											CPrintToChat(client, "%s %sInvalid command format.", CHAT_WHITELIST, CHAT_ERROR);
-										}
-										else
-										{
-											PrintToServer("%s Invalid command format.", CONSOLE_WHITELIST);
-										}
-									}
-								}
-							}
-							else
-							{
-								if (Whitelist_Access_SteamID(sArg[1][1]))
-								{
-									Whitelist_Remove(sArg[1][1]);
-
-									if (client)
-									{
-										CPrintToChat(client, "%s %sPlayer deleted from whitelist. (%s%s%s)", CHAT_WHITELIST, CHAT_SUCCESS, 
-																											CHAT_VALUE, sArg[1][1], CHAT_SUCCESS);
-									}
-									else
-									{
-										PrintToServer("%s Player deleted from whitelist. (%s)", CONSOLE_WHITELIST, sArg[1][1]);
-									}
-								}
-								else
-								{
-									if (client)
-									{
-										CPrintToChat(client, "%s %sPlayer is not whitelisted.", CHAT_WHITELIST, CHAT_ERROR);
-									}
-									else
-									{
-										PrintToServer("%s Player is not whitelisted.", CONSOLE_WHITELIST);
-									}
-								}
-							}
-						}
-						else
-						{
-							if (client)
-							{
-								CPrintToChat(client, "%s %sInvalid target.", CHAT_WHITELIST, CHAT_ERROR);
-							}
-							else
-							{
-								PrintToServer("%s Invalid target.", CONSOLE_WHITELIST);
-							}
-						}
+						CPrintToChat(client, "%s %sPlayer added to whitelist. (%s%s %s| %s%s%s)", CHAT_WHITELIST, CHAT_SUCCESS, 
+																								CHAT_VALUE, sArgs[1][1], CHAT_SUCCESS, 
+																								CHAT_VALUE, sArgs[2], CHAT_SUCCESS);
 					}
 					else
 					{
-						if (client)
-						{
-							CPrintToChat(client, "%s %sMultiple targets.", CHAT_WHITELIST, CHAT_ERROR);
-						}
-						else
-						{
-							PrintToServer("%s Multiple targets.", CONSOLE_WHITELIST);
-						}
+						PrintToServer("%s Player added to whitelist. (%s | %s)", CONSOLE_WHITELIST, sArgs[1][1], sArgs[2]);
 					}
 				}
 				else
 				{
 					if (client)
 					{
-						CPrintToChat(client, "%s %sInvalid target.", CHAT_WHITELIST, CHAT_ERROR);
+						CPrintToChat(client, "%s %sInvalid command format.", CHAT_WHITELIST, CHAT_ERROR);
 					}
 					else
 					{
-						PrintToServer("%s Invalid target.", CONSOLE_WHITELIST);
+						PrintToServer("%s Invalid command format.", CONSOLE_WHITELIST);
 					}
-				}
-
-				lolo_CloseHandle(hTargets);
-			}
-			else
-			{
-				if (client)
-				{
-					CPrintToChat(client, "%s %sInvalid command format.", CHAT_WHITELIST, CHAT_ERROR);
-				}
-				else
-				{
-					PrintToServer("%s Invalid command format.", CONSOLE_WHITELIST);
 				}
 			}
 		}
+		else
+		{
+			if (client)
+			{
+				CPrintToChat(client, "%s %sInvalid target.", CHAT_WHITELIST, CHAT_ERROR);
+			}
+			else
+			{
+				PrintToServer("%s Invalid target.", CONSOLE_WHITELIST);
+			}
+		}
 	}
+	else
+	{
+		if (client)
+		{
+			CPrintToChat(client, "%s %sMultiple targets.", CHAT_WHITELIST, CHAT_ERROR);
+		}
+		else
+		{
+			PrintToServer("%s Multiple targets.", CONSOLE_WHITELIST);
+		}
+	}
+
+	lolo_CloseHandle(hTargets);
+}
+
+// whitelist remove <target>
+stock void Command_Whitelist_Remove(int client, const char[][] sArgs, int args_count)
+{
+	if (args_count != 2)
+	{
+		if (client)
+		{
+			CPrintToChat(client, "%s %sInvalid command format.", CHAT_WHITELIST, CHAT_ERROR);
+		}
+		else
+		{
+			PrintToServer("%s Invalid command format.", CONSOLE_WHITELIST);
+		}
+
+		return;
+	}
+
+	ArrayList hTargets = lolo_Target_Process(client, sArgs[1]);
+
+	if (hTargets.Length == 1)
+	{
+		int target = hTargets.Get(0);
+
+		char sSteamID[WHITELIST_STEAM_ID_LENGTH];
+		GetClientAuthId(target, AuthId_Steam2, sSteamID, sizeof(sSteamID));
+
+		if (!Whitelist_Access_SteamID(sSteamID))
+		{
+			if (client)
+			{
+				CPrintToChat(client, "%s %sPlayer is not whitelisted.", CHAT_WHITELIST, CHAT_ERROR);
+			}
+			else
+			{
+				PrintToServer("%s Player is not whitelisted.", CONSOLE_WHITELIST);
+			}
+		}
+		else
+		{
+			Whitelist_Remove(sSteamID);
+
+			if (client)
+			{
+				CPrintToChat(client, "%s %sPlayer removed from whitelist. (%s%s%s)", CHAT_WHITELIST, CHAT_SUCCESS, 
+																					CHAT_VALUE, sSteamID, CHAT_SUCCESS);
+			}
+			else
+			{
+				PrintToServer("%s Player removed from whitelist. (%s)", CONSOLE_WHITELIST, sSteamID);
+			}
+		}
+	}
+	else if (hTargets.Length == 0)
+	{
+		if (lolo_String_Startswith(sArgs[1], "#STEAM", true))
+		{
+			if (!Whitelist_Access_SteamID(sArgs[1][1]))
+			{
+				if (client)
+				{
+					CPrintToChat(client, "%s %sPlayer is not whitelisted.", CHAT_WHITELIST, CHAT_ERROR);
+				}
+				else
+				{
+					PrintToServer("%s Player is not whitelisted.", CONSOLE_WHITELIST);
+				}
+			}
+			else
+			{
+				Whitelist_Remove(sArgs[1][1]);
+
+				if (client)
+				{
+					CPrintToChat(client, "%s %sPlayer removed from whitelist. (%s%s%s)", CHAT_WHITELIST, CHAT_SUCCESS, 
+																						CHAT_VALUE, sArgs[1][1], CHAT_SUCCESS);
+				}
+				else
+				{
+					PrintToServer("%s Player removed from whitelist. (%s)", CONSOLE_WHITELIST, sArgs[1][1]);
+				}
+			}
+		}
+		else
+		{
+			if (client)
+			{
+				CPrintToChat(client, "%s %sInvalid target.", CHAT_WHITELIST, CHAT_ERROR);
+			}
+			else
+			{
+				PrintToServer("%s Invalid target.", CONSOLE_WHITELIST);
+			}
+		}
+	}
+	else
+	{
+		if (client)
+		{
+			CPrintToChat(client, "%s %sMultiple targets.", CHAT_WHITELIST, CHAT_ERROR);
+		}
+		else
+		{
+			PrintToServer("%s Multiple targets.", CONSOLE_WHITELIST);
+		}
+	}
+
+	lolo_CloseHandle(hTargets);
 }
 
 // whitelist list
-stock void Whitelist_List(int client)
+stock void Command_Whitelist_List(int client)
 {
 	if (!g_hWhitelist.Length)
 	{
@@ -653,14 +682,14 @@ public void Whitelist_Add(int client, const char[] sSteamID, const char[] sName)
 				char sAdminSteamID[WHITELIST_STEAM_ID_LENGTH];
 				GetClientAuthId(client, AuthId_Steam2, sAdminSteamID, sizeof(sAdminSteamID));
 
-				hFile.WriteLine("//%s - added by %s (%s) at %s - %s", sName, sAdminName, sAdminSteamID, sMap, sDate);
+				hFile.WriteLine("// %s - added by %s (%s) at %s - %s", sName, sAdminName, sAdminSteamID, sMap, sDate);
 			}
 			else
 			{
-				hFile.WriteLine("//%s - added from server console at %s - %s", sName, sMap, sDate);
+				hFile.WriteLine("// %s - added from server console at %s - %s", sName, sMap, sDate);
 			}
 
-			hFile.WriteLine("%s;", sSteamID);
+			hFile.WriteLine(sSteamID);
 		}
 
 		lolo_CloseHandle(hFile);
