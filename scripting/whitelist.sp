@@ -38,7 +38,7 @@ GLOBAL VARIABLES
 #define WHITELIST_BLOCK_MESSAGE 		"Not whitelisted"
 
 #define CONSOLE_WHITELIST 				"[Whitelist]"
-#define CHAT_WHITELIST 					"\x072f4f4f[\x07ff6347Whitelist\x072f4f4f]:"
+#define CHAT_WHITELIST 					"\x072f4f4f[\x07ff6347Whitelist\x072f4f4f]"
 #define CHAT_VALUE 						"\x07ff6347"
 #define CHAT_SUCCESS 					"\x07FFC0CB"
 #define CHAT_ERROR 						"\x07DC143C"
@@ -210,6 +210,8 @@ public Action Command_Whitelist(int client, int args)
 		{
 			hArgs.GetString(i, sArgs[i], 192);
 		}
+
+		lolo_CloseHandle(hArgs);
 
 		if (args_count == 1)
 		{
