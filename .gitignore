@@ -19,4 +19,5 @@
 !translations/
 !translations/**
 
-!build.sh
+# Project build
+!dependencies.txt

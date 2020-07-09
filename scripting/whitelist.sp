@@ -901,5 +901,4 @@ public void Whitelist_Delete(const char[] sSteamID)
 		// In case player is on server we also check for that.
 		Whitelist_Check();
 	}
-
 }
