@@ -326,15 +326,15 @@ public Action Command_Whitelist(int client, int args)
 stock void Command_Whitelist_Help(int client)
 {
 	char[] usage = "usage:\n" ...
-					"    sm_whitelist <on/off>                  Toggle whitelist\n" ...
-					"    sm_whitelist reload                    Reload whitelist\n" ...
-					"    sm_whitelist <pause/unpause>           Toggle pause\n" ...
-					"    sm_whitelist check                     Initiate whitelist check\n" ...
-					"    sm_whitelist add <steam_id> <name>     Add by steam_id\n" ...
-					"    sm_whitelist add <target>              Add by search\n" ...
-					"    sm_whitelist remove <target>           Remove by search\n" ...
-					"    sm_whitelist list                      Generate list\n" ...
-					"    sm_whitelist help                      Print help\n";
+					"  sm_whitelist <on/off>                  Toggle whitelist\n" ...
+					"  sm_whitelist reload                    Reload whitelist\n" ...
+					"  sm_whitelist <pause/unpause>           Toggle pause\n" ...
+					"  sm_whitelist check                     Initiate whitelist check\n" ...
+					"  sm_whitelist add <steam_id> <name>     Add by steam_id\n" ...
+					"  sm_whitelist add <target>              Add by search\n" ...
+					"  sm_whitelist remove <target>           Remove by search\n" ...
+					"  sm_whitelist list                      Generate list\n" ...
+					"  sm_whitelist help                      Print help\n";
 
 	if (client)
 	{
@@ -666,40 +666,43 @@ public bool Whitelist_Access_SteamID(const char[] sSteamID)
 
 public void Whitelist_Add(int client, const char[] sSteamID, const char[] sName)
 {
-	if (FileExists(g_sWhitelist_Path))
+	if (!FileExists(g_sWhitelist_Path))
 	{
-		File hFile = OpenFile(g_sWhitelist_Path, "a+");
+		File file = OpenFile(g_sWhitelist_Path, "a+");
+		delete file;
+	}
 
-		if (hFile != null)
+	File hFile = OpenFile(g_sWhitelist_Path, "a+");
+
+	if (hFile != null)
+	{
+		char sDate[64];
+		FormatTime(sDate, sizeof(sDate), "%Y_%m_%d_%H_%M", GetTime());
+
+		char sMap[64];
+		GetCurrentMap(sMap, sizeof(sMap));
+
+		if (client)
 		{
-			char sDate[64];
-			FormatTime(sDate, sizeof(sDate), "%Y_%m_%d_%H_%M", GetTime());
+			char sAdminName[32];
+			GetClientName(client, sAdminName, sizeof(sAdminName));
 
-			char sMap[64];
-			GetCurrentMap(sMap, sizeof(sMap));
+			char sAdminSteamID[WHITELIST_STEAM_ID_LENGTH];
+			GetClientAuthId(client, AuthId_Steam2, sAdminSteamID, sizeof(sAdminSteamID));
 
-			if (client)
-			{
-				char sAdminName[32];
-				GetClientName(client, sAdminName, sizeof(sAdminName));
-
-				char sAdminSteamID[WHITELIST_STEAM_ID_LENGTH];
-				GetClientAuthId(client, AuthId_Steam2, sAdminSteamID, sizeof(sAdminSteamID));
-
-				hFile.WriteLine("// %s - added by %s (%s) at %s - %s", sName, sAdminName, sAdminSteamID, sMap, sDate);
-			}
-			else
-			{
-				hFile.WriteLine("// %s - added from server console at %s - %s", sName, sMap, sDate);
-			}
-
-			hFile.WriteLine(sSteamID);
+			hFile.WriteLine("// %s - added by %s (%s) at %s - %s", sName, sAdminName, sAdminSteamID, sMap, sDate);
+		}
+		else
+		{
+			hFile.WriteLine("// %s - added from server console at %s - %s", sName, sMap, sDate);
 		}
 
-		lolo_CloseHandle(hFile);
-
-		Whitelist_Insert(sSteamID);
+		hFile.WriteLine(sSteamID);
 	}
+
+	lolo_CloseHandle(hFile);
+
+	Whitelist_Insert(sSteamID);
 }
 
 public void Whitelist_Remove(const char[] sSteamID)
